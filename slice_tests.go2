@@ -5,23 +5,16 @@ import (
 	"log"
 	"reflect"
 	"strconv"
+	"testing"
 )
 
-func testAll() {
-	ints := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	//strings := []string {"a","b","c","d"}
-	testMap(ints)
-	testFilter(ints)
-	testReduce(ints)
-	testChunk(ints)
-	testFill(ints)
-	testFindIndex(ints)
+func init() {
+	testing.Init()
 }
 
-func testMap(data []int) {
-	printBefore("Map with func(i int, _ int, _ []int) string { return strconv.Itoa(i) }", data)
-	printAfter(Map(data, func(i int, _ int, _ []int) string { return strconv.Itoa(i) }))
-	// tests
+func Test_Map(t *testing.T) {
+	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
 	tt := []struct {
 		name     string
 		convert  func(i int, _ int, _ []int) interface{} // it should have a real value instead of empty interface in real life
@@ -45,6 +38,7 @@ func testMap(data []int) {
 	}
 
 	for _, tc := range tt {
+		// t.Run is not working for me in go2 now
 		res := Map(data, tc.convert)
 		if !reflect.DeepEqual(res, tc.expected) {
 			log.Fatalf(`Map %s: expected 
@@ -56,10 +50,9 @@ func testMap(data []int) {
 	fmt.Println("Map tested successfully")
 }
 
-func testFilter(data []int) {
-	printBefore("Filter with func(i int, _ int, _ []int) bool { return i % 2 == 0 }", data)
-	printAfter(Filter(data, func(i int, _ int, _ []int) bool { return i%2 == 0 }))
-	// tests
+func Test_Filter(t *testing.T) {
+	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
 	tt := []struct {
 		name     string
 		filter   func(i int, _ int, _ []int) bool
@@ -94,29 +87,8 @@ func testFilter(data []int) {
 	fmt.Println("Filter tested successfully")
 }
 
-type reduceAccumulator1 struct {
-	sum   int
-	count int
-}
-
-func testReduce(data []int) {
-	printBefore("Reduce with func(struct{sum int, count int}, int, int) struct{sum int, count int}", data)
-	printAfter(Reduce(data, func(acc reduceAccumulator1, i int, _ int) reduceAccumulator1 {
-		acc.count++
-		acc.sum += i
-		return acc
-	}, reduceAccumulator1{}))
-
-	res := Reduce(data, func(acc reduceAccumulator1, i int, _ int) reduceAccumulator1 {
-		acc.count++
-		acc.sum += i
-		return acc
-	}, reduceAccumulator1{})
-	if !reflect.DeepEqual(res, reduceAccumulator1{sum:45, count:9}) {
-		log.Fatalf(`Reduce custom: expected
-				%#v, got
-				%#v`, reduceAccumulator1{sum:45, count:9}, res)
-	}
+func Test_Reduce(t *testing.T) {
+	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 	// tests
 	tt := []struct {
@@ -131,7 +103,7 @@ func testReduce(data []int) {
 				return acc + elem
 			},
 			accumulator: 0,
-			expected: 45,
+			expected:    45,
 		},
 		{
 			name: "count: func(int, int, int) int",
@@ -139,7 +111,7 @@ func testReduce(data []int) {
 				return acc + 1
 			},
 			accumulator: 0,
-			expected: 9,
+			expected:    9,
 		},
 		{
 			name: "count: func(int, int, int) int",
@@ -147,7 +119,7 @@ func testReduce(data []int) {
 				return acc + index
 			},
 			accumulator: 0,
-			expected: 36,
+			expected:    36,
 		},
 	}
 
@@ -163,10 +135,9 @@ func testReduce(data []int) {
 	fmt.Println("Reduce tested successfully")
 }
 
-func testChunk(data []int) {
-	printBefore("Chunk by 3", data)
-	printAfter(Chunk(data, 3))
-	// tests
+func Test_Chunk(t *testing.T) {
+	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
 	tt := []struct {
 		name     string
 		size     int
@@ -231,12 +202,9 @@ func testChunk(data []int) {
 	fmt.Println("Chunk tested successfully")
 }
 
-func testFill(data []int) {
-	c := make([]int, len(data))
-	copy(c, data)
-	printBefore("Fill 3 to 6 by 1", c)
-	printAfter(Fill(c, 1, 3, 6))
-	// tests
+func Test_Fill(t *testing.T) {
+	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
 	tt := []struct {
 		name     string
 		value    int
@@ -296,6 +264,7 @@ func testFill(data []int) {
 	}
 
 	for _, tc := range tt {
+		c := make([]int, len(data))
 		copy(c, data)
 		res := Fill(c, tc.value, tc.from, tc.to)
 		if !reflect.DeepEqual(res, tc.expected) {
@@ -308,10 +277,9 @@ func testFill(data []int) {
 	fmt.Println("Fill tested successfully")
 }
 
-func testFindIndex(data []int) {
-	printBefore("FindIndex func(i int) bool { return i == 3 }", data)
-	printAfter(FindIndex(data, func(i int) bool { return i == 3 }))
-	// tests
+func Test_FindIndex(t *testing.T) {
+	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
 	tt := []struct {
 		name      string
 		predicate func(i int) bool
@@ -371,15 +339,4 @@ func testFindIndex(data []int) {
 	}
 
 	fmt.Println("FindIndex tested successfully")
-}
-
-func printBefore[T any](name string, data []T) {
-	fmt.Println(name)
-	fmt.Println(" input: ")
-	fmt.Printf("  %#v\n", data)
-}
-
-func printAfter(data interface{}) {
-	fmt.Println(" output: ")
-	fmt.Printf("  %#v\n", data)
 }

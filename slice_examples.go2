@@ -1,0 +1,86 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"reflect"
+	"strconv"
+)
+
+func Example_Map(ints []int, strs []string) {
+	printBefore("Map with func(i int, _ int, _ []int) string { return strconv.Itoa(i) }", ints)
+	printAfter(Map(ints, func(i int, _ int, _ []int) string { return strconv.Itoa(i) }))
+	printBefore("Map with func(s string, _ int, _ []string) string { return s + s }", strs)
+	printAfter(Map(strs, func(s string, _ int, _ []string) string { return s + s }))
+}
+
+func Example_Filter(ints []int, strs []string) {
+	printBefore("Filter with func(i int, _ int, _ []int) bool { return i % 2 == 0 }", ints)
+	printAfter(Filter(ints, func(i int, _ int, _ []int) bool { return i%2 == 0 }))
+	printBefore("Filter with func(s string, _ int, _ []string) bool { return s == \"a\" }", strs)
+	printAfter(Filter(strs, func(s string, _ int, _ []string) bool { return s == "a" }))
+}
+
+type reduceAccumulator1 struct {
+	sum   int
+	count int
+}
+
+func Example_Reduce(ints []int, _ []string) {
+	printBefore("Reduce with func(struct{sum int, count int}, int, int) struct{sum int, count int}", ints)
+	printAfter(Reduce(ints, func(acc reduceAccumulator1, i int, _ int) reduceAccumulator1 {
+		acc.count++
+		acc.sum += i
+		return acc
+	}, reduceAccumulator1{}))
+
+	res := Reduce(ints, func(acc reduceAccumulator1, i int, _ int) reduceAccumulator1 {
+		acc.count++
+		acc.sum += i
+		return acc
+	}, reduceAccumulator1{})
+	if !reflect.DeepEqual(res, reduceAccumulator1{sum: 45, count: 9}) {
+		log.Fatalf(`Reduce custom: expected
+				%#v, got
+				%#v`, reduceAccumulator1{sum: 45, count: 9}, res)
+	}
+}
+
+func Example_Chunk(ints []int, strs []string) {
+	printBefore("Chunk by 3", ints)
+	printAfter(Chunk(ints, 3))
+
+	printBefore("Chunk by 3", strs)
+	printAfter(Chunk(strs, 3))
+}
+
+func Example_Fill(ints []int, strs []string) {
+	is := make([]int, len(ints))
+	copy(is, ints)
+	printBefore("Fill 3 to 6 by 1", is)
+	printAfter(Fill(is, 1, 3, 6))
+
+	ss := make([]string, len(strs))
+	copy(ss, strs)
+	printBefore("Fill 1 to 3 by bu", ss)
+	printAfter(Fill(ss, "bu", 1, 3))
+}
+
+func Example_FindIndex(ints []int, strs []string) {
+	printBefore("FindIndex func(i int) bool { return i == 3 }", ints)
+	printAfter(FindIndex(ints, func(i int) bool { return i == 3 }))
+
+	printBefore("FindIndex func(s string) bool { return s == \"b\" }", strs)
+	printAfter(FindIndex(strs, func(s string) bool { return s == "b" }))
+}
+
+func printBefore[T any](name string, data []T) {
+	fmt.Println(name)
+	fmt.Println(" input: ")
+	fmt.Printf("  %#v\n", data)
+}
+
+func printAfter(data interface{}) {
+	fmt.Println(" output: ")
+	fmt.Printf("  %#v\n", data)
+}
