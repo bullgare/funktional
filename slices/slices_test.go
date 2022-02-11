@@ -1,8 +1,6 @@
-package main
+package slices
 
 import (
-	"fmt"
-	"log"
 	"reflect"
 	"strconv"
 	"testing"
@@ -41,13 +39,11 @@ func Test_Map(t *testing.T) {
 		// t.Run is not working for me in go2 now
 		res := Map(data, tc.convert)
 		if !reflect.DeepEqual(res, tc.expected) {
-			log.Fatalf(`Map %s: expected 
+			t.Fatalf(`Map %s: expected 
 				%#v, got 
 				%#v`, tc.name, tc.expected, res)
 		}
 	}
-
-	fmt.Println("Map tested successfully")
 }
 
 func Test_Filter(t *testing.T) {
@@ -78,13 +74,11 @@ func Test_Filter(t *testing.T) {
 	for _, tc := range tt {
 		res := Filter(data, tc.filter)
 		if !reflect.DeepEqual(res, tc.expected) {
-			log.Fatalf(`Map %s: expected
+			t.Fatalf(`Map %s: expected
 				%#v, got
 				%#v`, tc.name, tc.expected, res)
 		}
 	}
-
-	fmt.Println("Filter tested successfully")
 }
 
 func Test_Reduce(t *testing.T) {
@@ -126,13 +120,89 @@ func Test_Reduce(t *testing.T) {
 	for _, tc := range tt {
 		res := Reduce(data, tc.reduce, tc.accumulator)
 		if !reflect.DeepEqual(res, tc.expected) {
-			log.Fatalf(`Reduce %s: expected
+			t.Fatalf(`Reduce %s: expected
 				%#v, got
 				%#v`, tc.name, tc.expected, res)
 		}
 	}
+}
 
-	fmt.Println("Reduce tested successfully")
+func Test_ForEach(t *testing.T) {
+	in := []string{"a", "b", "c", "d"}
+	expectedRes := "a0,b1,c2,d3,"
+
+	acc := ""
+	ForEach(in, func(s string, pos int) {
+		acc += s + strconv.Itoa(pos) + ","
+	})
+
+	if !reflect.DeepEqual(acc, expectedRes) {
+		t.Fatalf(`ForEach: expected
+				%#v, got
+				%#v`, expectedRes, acc)
+	}
+}
+
+func Test_Copy_Integers(t *testing.T) {
+	tt := []struct {
+		name        string
+		in          []int
+		expectedOut []int
+	}{
+		{
+			name:        "happy path",
+			in:          []int{1, 2, 3},
+			expectedOut: []int{1, 2, 3},
+		},
+		{
+			name:        "nil - nil",
+			in:          nil,
+			expectedOut: nil,
+		},
+		{
+			name:        "empty slice - empty slice",
+			in:          []int{},
+			expectedOut: []int{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			res := Copy(tc.in)
+			if tc.in != nil {
+				// altering initial slice should not affect the result
+				tc.in = append(tc.in, 4)
+			}
+			if !reflect.DeepEqual(res, tc.expectedOut) {
+				t.Fatalf(`Copy %s: expected
+				%#v, got
+				%#v`, tc.name, tc.expectedOut, res)
+			}
+		})
+	}
+}
+
+func Test_Copy_DeepCopyShouldNotWork(t *testing.T) {
+	type my struct {
+		a string
+	}
+
+	in := []*my{
+		{a: "a"},
+		{a: "b"},
+	}
+	res := Copy(in)
+	in[0].a = "c"
+	expectedRes := []*my{
+		{a: "c"}, // we are expecting it to change here as we do not handle deep copy
+		{a: "b"},
+	}
+
+	if !reflect.DeepEqual(res, expectedRes) {
+		t.Fatalf(`Copy should not care about deep equality: expected
+				%#v, got
+				%#v`, expectedRes, res)
+	}
 }
 
 func Test_Chunk(t *testing.T) {
@@ -193,13 +263,11 @@ func Test_Chunk(t *testing.T) {
 	for _, tc := range tt {
 		res := Chunk(data, tc.size)
 		if !reflect.DeepEqual(res, tc.expected) {
-			log.Fatalf(`Chunk %s: expected 
+			t.Fatalf(`Chunk %s: expected 
 				%#v, got 
 				%#v`, tc.name, tc.expected, res)
 		}
 	}
-
-	fmt.Println("Chunk tested successfully")
 }
 
 func Test_Fill(t *testing.T) {
@@ -268,13 +336,11 @@ func Test_Fill(t *testing.T) {
 		copy(c, data)
 		res := Fill(c, tc.value, tc.from, tc.to)
 		if !reflect.DeepEqual(res, tc.expected) {
-			log.Fatalf(`Fill %s: expected 
+			t.Fatalf(`Fill %s: expected 
 				%#v, got 
 				%#v`, tc.name, tc.expected, res)
 		}
 	}
-
-	fmt.Println("Fill tested successfully")
 }
 
 func Test_FindIndex(t *testing.T) {
@@ -332,11 +398,117 @@ func Test_FindIndex(t *testing.T) {
 			res = FindIndex(data, tc.predicate)
 		}
 		if !reflect.DeepEqual(res, tc.expected) {
-			log.Fatalf(`Fill %s: expected
+			t.Fatalf(`Fill %s: expected
 				%#v, got
 				%#v`, tc.name, tc.expected, res)
 		}
 	}
+}
 
-	fmt.Println("FindIndex tested successfully")
+func Test_Remove(t *testing.T) {
+	tt := []struct {
+		name            string
+		in              []string
+		assertion       func(string, int) bool
+		expectedOut     []string
+		expectedRemoved []string
+	}{
+		{
+			name: "happy path",
+			in:   []string{"a", "b", "c", "d"},
+			assertion: func(s string, pos int) bool {
+				return s == "b" || pos == 2
+			},
+			expectedOut:     []string{"a", "d"},
+			expectedRemoved: []string{"b", "c"},
+		},
+		{
+			name: "nil in - nil res",
+			in:   nil,
+			assertion: func(s string, pos int) bool {
+				return s == "b" || pos == 2
+			},
+			expectedOut:     nil,
+			expectedRemoved: nil,
+		},
+		{
+			name: "empty in - empty res",
+			in:   []string{},
+			assertion: func(s string, pos int) bool {
+				return s == "b" || pos == 2
+			},
+			expectedOut:     []string{},
+			expectedRemoved: []string{},
+		},
+		{
+			name: "remove none",
+			in:   []string{"a", "b", "c", "d"},
+			assertion: func(s string, pos int) bool {
+				return false
+			},
+			expectedOut:     []string{"a", "b", "c", "d"},
+			expectedRemoved: []string{},
+		},
+		{
+			name: "remove all",
+			in:   []string{"a", "b", "c", "d"},
+			assertion: func(s string, pos int) bool {
+				return true
+			},
+			expectedOut:     []string{},
+			expectedRemoved: []string{"a", "b", "c", "d"},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			res, removed := Remove(tc.in, tc.assertion)
+			if !reflect.DeepEqual(res, tc.expectedOut) || !reflect.DeepEqual(removed, tc.expectedRemoved) {
+				t.Fatalf(`Fill %s: expected 
+				%#v and %#v, got 
+				%#v and %#v`, tc.name, tc.expectedOut, tc.expectedRemoved, res, removed)
+			}
+		})
+	}
+}
+
+func Test_ReverseInPlace(t *testing.T) {
+	tt := []struct {
+		name        string
+		in          []int
+		expectedRes []int
+	}{
+		{
+			name:        "happy path odd",
+			in:          []int{1, 2, 3},
+			expectedRes: []int{3, 2, 1},
+		},
+		{
+			name:        "happy path even",
+			in:          []int{1, 2, 3, 4},
+			expectedRes: []int{4, 3, 2, 1},
+		},
+		{
+			name:        "happy path - values do not matter",
+			in:          []int{100, 2, 30, 4},
+			expectedRes: []int{4, 30, 2, 100},
+		},
+		{
+			name:        "nil value is also valid",
+			in:          nil,
+			expectedRes: nil,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			ReverseInPlace(tc.in)
+
+			if !reflect.DeepEqual(tc.in, tc.expectedRes) {
+				t.Fatalf(`Fill %s: expected
+				%#v, got
+				%#v`, tc.name, tc.expectedRes, tc.in)
+			}
+		})
+	}
 }
