@@ -11,33 +11,41 @@ func init() {
 }
 
 func Test_Map(t *testing.T) {
-	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-
 	tt := []struct {
 		name     string
+		in       []int
 		convert  func(i int, _ int, _ []int) interface{} // it should have a real value instead of empty interface in real life
 		expected []interface{}                           // it should have a real value instead of empty interface in real life
 	}{
 		{
 			name:     "func(i int, _ int, _ []int) string { return strconv.Itoa(i) }",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			convert:  func(i int, _ int, _ []int) interface{} { return strconv.Itoa(i) },
 			expected: []interface{}{"1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 		{
 			name:     "func(i int, _ int, _ []int) float64 { return float64(i) }",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			convert:  func(i int, _ int, _ []int) interface{} { return float64(i) / 10 },
 			expected: []interface{}{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9},
 		},
 		{
 			name:     "func(i int, _ int, _ []int) bool { return i % 2 == 0 }",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			convert:  func(i int, _ int, _ []int) interface{} { return i%2 == 0 },
 			expected: []interface{}{false, true, false, true, false, true, false, true, false},
+		},
+		{
+			name:     "nil in - nil out",
+			in:       nil,
+			convert:  func(i int, _ int, _ []int) interface{} { return i%2 == 0 },
+			expected: nil,
 		},
 	}
 
 	for _, tc := range tt {
 		// t.Run is not working for me in go2 now
-		res := Map(data, tc.convert)
+		res := Map(tc.in, tc.convert)
 		if !reflect.DeepEqual(res, tc.expected) {
 			t.Fatalf(`Map %s: expected 
 				%#v, got 
@@ -47,32 +55,40 @@ func Test_Map(t *testing.T) {
 }
 
 func Test_Filter(t *testing.T) {
-	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-
 	tt := []struct {
 		name     string
+		in       []int
 		filter   func(i int, _ int, _ []int) bool
 		expected []int
 	}{
 		{
 			name:     "func(i int, _ int, _ []int) bool { return i % 2 == 0 }",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			filter:   func(i int, _ int, _ []int) bool { return i%2 == 0 },
 			expected: []int{2, 4, 6, 8},
 		},
 		{
 			name:     "func(i int, _ int, _ []int) bool { return false }",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			filter:   func(i int, _ int, _ []int) bool { return false },
 			expected: []int{},
 		},
 		{
 			name:     "func(i int) bool { return true }",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			filter:   func(i int, _ int, _ []int) bool { return true },
 			expected: []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
+		},
+		{
+			name:     "nil in - nil out",
+			in:       nil,
+			filter:   func(i int, _ int, _ []int) bool { return true },
+			expected: nil,
 		},
 	}
 
 	for _, tc := range tt {
-		res := Filter(data, tc.filter)
+		res := Filter(tc.in, tc.filter)
 		if !reflect.DeepEqual(res, tc.expected) {
 			t.Fatalf(`Map %s: expected
 				%#v, got
@@ -82,17 +98,16 @@ func Test_Filter(t *testing.T) {
 }
 
 func Test_Reduce(t *testing.T) {
-	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-
-	// tests
 	tt := []struct {
 		name        string
+		in          []int
 		reduce      func(acc int, elem int, _ int) int
 		accumulator int
 		expected    int
 	}{
 		{
 			name: "sum: func(int, int, int) int",
+			in:   []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			reduce: func(acc int, elem int, _ int) int {
 				return acc + elem
 			},
@@ -101,6 +116,7 @@ func Test_Reduce(t *testing.T) {
 		},
 		{
 			name: "count: func(int, int, int) int",
+			in:   []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			reduce: func(acc int, _ int, _ int) int {
 				return acc + 1
 			},
@@ -109,16 +125,26 @@ func Test_Reduce(t *testing.T) {
 		},
 		{
 			name: "count: func(int, int, int) int",
+			in:   []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			reduce: func(acc int, _ int, index int) int {
 				return acc + index
 			},
 			accumulator: 0,
 			expected:    36,
 		},
+		{
+			name: "nil in - initial accumulator",
+			in:   nil,
+			reduce: func(acc int, _ int, index int) int {
+				return acc + index
+			},
+			accumulator: 0,
+			expected:    0,
+		},
 	}
 
 	for _, tc := range tt {
-		res := Reduce(data, tc.reduce, tc.accumulator)
+		res := Reduce(tc.in, tc.reduce, tc.accumulator)
 		if !reflect.DeepEqual(res, tc.expected) {
 			t.Fatalf(`Reduce %s: expected
 				%#v, got
@@ -206,62 +232,76 @@ func Test_Copy_DeepCopyShouldNotWork(t *testing.T) {
 }
 
 func Test_Chunk(t *testing.T) {
-	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-
 	tt := []struct {
 		name     string
+		in       []int
 		size     int
 		expected [][]int
 	}{
 		{
 			name:     "by 3",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     3,
 			expected: [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}},
 		},
 		{
 			name:     "by 2",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     2,
 			expected: [][]int{{1, 2}, {3, 4}, {5, 6}, {7, 8}, {9}},
 		},
 		{
 			name:     "by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     1,
 			expected: [][]int{{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}},
 		},
 		{
 			name:     "by 0",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     0,
 			expected: [][]int{{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}},
 		},
 		{
 			name:     "by -1",
-			size:     0,
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
+			size:     -1,
 			expected: [][]int{{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}},
 		},
 		{
 			name:     "by 10",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     10,
 			expected: [][]int{{1, 2, 3, 4, 5, 6, 7, 8, 9}},
 		},
 		{
 			name:     "by 100",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     100,
 			expected: [][]int{{1, 2, 3, 4, 5, 6, 7, 8, 9}},
 		},
 		{
 			name:     "by 9",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     9,
 			expected: [][]int{{1, 2, 3, 4, 5, 6, 7, 8, 9}},
 		},
 		{
 			name:     "by 8",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			size:     8,
 			expected: [][]int{{1, 2, 3, 4, 5, 6, 7, 8}, {9}},
+		},
+		{
+			name:     "nil in - nil out",
+			in:       nil,
+			size:     8,
+			expected: nil,
 		},
 	}
 
 	for _, tc := range tt {
-		res := Chunk(data, tc.size)
+		res := Chunk(tc.in, tc.size)
 		if !reflect.DeepEqual(res, tc.expected) {
 			t.Fatalf(`Chunk %s: expected 
 				%#v, got 
@@ -271,10 +311,9 @@ func Test_Chunk(t *testing.T) {
 }
 
 func Test_Fill(t *testing.T) {
-	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-
 	tt := []struct {
 		name     string
+		in       []int
 		value    int
 		from     int
 		to       int
@@ -282,6 +321,7 @@ func Test_Fill(t *testing.T) {
 	}{
 		{
 			name:     "3 to 6 by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			value:    1,
 			from:     3,
 			to:       6,
@@ -289,6 +329,7 @@ func Test_Fill(t *testing.T) {
 		},
 		{
 			name:     "0 to 9 by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			value:    1,
 			from:     0,
 			to:       9,
@@ -296,6 +337,7 @@ func Test_Fill(t *testing.T) {
 		},
 		{
 			name:     "-1 to 3 by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			value:    1,
 			from:     -1,
 			to:       3,
@@ -303,6 +345,7 @@ func Test_Fill(t *testing.T) {
 		},
 		{
 			name:     "6 to 15 by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			value:    1,
 			from:     6,
 			to:       15,
@@ -310,6 +353,7 @@ func Test_Fill(t *testing.T) {
 		},
 		{
 			name:     "6 to 3 by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			value:    1,
 			from:     6,
 			to:       3,
@@ -317,6 +361,7 @@ func Test_Fill(t *testing.T) {
 		},
 		{
 			name:     "10 to 15 by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			value:    1,
 			from:     6,
 			to:       3,
@@ -324,17 +369,24 @@ func Test_Fill(t *testing.T) {
 		},
 		{
 			name:     "-3 to -1 by 1",
+			in:       []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			value:    1,
 			from:     -3,
 			to:       -1,
 			expected: []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 		},
+		{
+			name:     "nil in - nil out",
+			in:       nil,
+			value:    1,
+			from:     0,
+			to:       0,
+			expected: nil,
+		},
 	}
 
 	for _, tc := range tt {
-		c := make([]int, len(data))
-		copy(c, data)
-		res := Fill(c, tc.value, tc.from, tc.to)
+		res := Fill(tc.in, tc.value, tc.from, tc.to)
 		if !reflect.DeepEqual(res, tc.expected) {
 			t.Fatalf(`Fill %s: expected 
 				%#v, got 
@@ -344,58 +396,70 @@ func Test_Fill(t *testing.T) {
 }
 
 func Test_FindIndex(t *testing.T) {
-	data := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-
 	tt := []struct {
 		name      string
+		in        []int
 		predicate func(i int) bool
 		fromIndex *int
 		expected  int
 	}{
 		{
 			name:      "func(i int) bool { return i == 3 }",
+			in:        []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			predicate: func(i int) bool { return i == 3 },
 			fromIndex: nil,
 			expected:  2,
 		},
 		{
 			name:      "func(i int) bool { return i == 30 }",
+			in:        []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			predicate: func(i int) bool { return i == 30 },
 			fromIndex: nil,
 			expected:  -1,
 		},
 		{
 			name:      "func(i int) bool { return i == 3 }, from index=1",
+			in:        []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			predicate: func(i int) bool { return i == 3 },
 			fromIndex: func() *int { i := 1; return &i }(),
 			expected:  2,
 		},
 		{
 			name:      "func(i int) bool { return i == 3 }, from index=5",
+			in:        []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			predicate: func(i int) bool { return i == 3 },
 			fromIndex: func() *int { i := 5; return &i }(),
 			expected:  -1,
 		},
 		{
 			name:      "func(i int) bool { return i == 3 }, from index=15",
+			in:        []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			predicate: func(i int) bool { return i == 3 },
 			fromIndex: func() *int { i := 15; return &i }(),
 			expected:  -1,
 		},
 		{
 			name:      "func(i int) bool { return i == 3 }, from index=-1",
+			in:        []int{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			predicate: func(i int) bool { return i == 3 },
 			fromIndex: func() *int { i := -1; return &i }(),
 			expected:  2,
+		},
+		{
+			name:      "nil in - -1",
+			in:        nil,
+			predicate: func(i int) bool { return i == 3 },
+			fromIndex: nil,
+			expected:  -1,
 		},
 	}
 
 	for _, tc := range tt {
 		var res int
 		if tc.fromIndex != nil {
-			res = FindIndex(data, tc.predicate, *tc.fromIndex)
+			res = FindIndex(tc.in, tc.predicate, *tc.fromIndex)
 		} else {
-			res = FindIndex(data, tc.predicate)
+			res = FindIndex(tc.in, tc.predicate)
 		}
 		if !reflect.DeepEqual(res, tc.expected) {
 			t.Fatalf(`Fill %s: expected

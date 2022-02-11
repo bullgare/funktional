@@ -2,6 +2,10 @@ package slices
 
 // Map creates a slice by iterating over a given slice and applying a function to it.
 func Map[T, Y any](in []T, convert func(T, int, []T) Y) []Y {
+	if in == nil {
+		return nil
+	}
+
 	res := make([]Y, 0, len(in))
 
 	for i, elem := range in {
@@ -13,6 +17,10 @@ func Map[T, Y any](in []T, convert func(T, int, []T) Y) []Y {
 
 // Filter iterates through a slice and returns a new slice with values filtered by given function.
 func Filter[T any](in []T, filter func(T, int, []T) bool) []T {
+	if in == nil {
+		return nil
+	}
+
 	res := make([]T, 0, len(in))
 
 	for i, elem := range in {
@@ -26,6 +34,10 @@ func Filter[T any](in []T, filter func(T, int, []T) bool) []T {
 
 // Reduce iterates through a slice and reduces it to a given accumulator.
 func Reduce[T, Y any](in []T, reduce func(Y, T, int) Y, acc Y) Y {
+	if in == nil {
+		return acc
+	}
+
 	for i, elem := range in {
 		acc = reduce(acc, elem, i)
 	}
@@ -45,6 +57,7 @@ func Copy[T any](in []T) []T {
 	if in == nil {
 		return nil
 	}
+
 	out := make([]T, len(in))
 	copy(out, in)
 
@@ -53,6 +66,10 @@ func Copy[T any](in []T) []T {
 
 // Chunk creates an array of elements splitted into groups the length of size.
 func Chunk[T any](in []T, size int) [][]T {
+	if in == nil {
+		return nil
+	}
+
 	if size < 1 {
 		size = 1
 	}
@@ -74,6 +91,7 @@ func Chunk[T any](in []T, size int) [][]T {
 }
 
 // Fill fills elements of array with value from start up to, but not including, end.
+// Mutates original slice.
 func Fill[T any](in []T, value T, start, end int) []T {
 	if start > end || start > len(in) || end < 1 {
 		return in

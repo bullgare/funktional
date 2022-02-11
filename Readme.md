@@ -14,7 +14,7 @@ Of course, they work with any values, not just integers or strings.
 
 ### For slices
 
-[Proper examples](./slices/slices_example_test.go).
+[More detailed examples](./slices/slices_example_test.go).
 
 | Function       | Example                                                                                                                                  | Description                                                                                                                                 |
 |----------------|------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
