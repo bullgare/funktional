@@ -15,7 +15,7 @@ func Map[T, Y any](in []T, convert func(T, int, []T) Y) []Y {
 	return res
 }
 
-// Filter iterates through a slice and returns a new slice with values filtered by given function.
+// Filter iterates over a slice and returns a new slice with values filtered by a given function.
 func Filter[T any](in []T, filter func(T, int, []T) bool) []T {
 	if in == nil {
 		return nil
@@ -32,7 +32,7 @@ func Filter[T any](in []T, filter func(T, int, []T) bool) []T {
 	return res
 }
 
-// Reduce iterates through a slice and reduces it to a given accumulator.
+// Reduce iterates over a slice and reduces it to a given accumulator.
 func Reduce[T, Y any](in []T, reduce func(Y, T, int) Y, acc Y) Y {
 	if in == nil {
 		return acc
